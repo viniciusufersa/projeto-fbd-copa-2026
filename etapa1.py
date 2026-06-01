@@ -1,10 +1,13 @@
+# ============================================================
+# ETAPA 1 - Criação do banco de dados e das tabelas
+# ============================================================
+
 import mysql.connector
 
 conexao = mysql.connector.connect(
     host='localhost',
     user='root',
-    password='',
-    use_pure=True
+    password=''
 )
 
 cursor = conexao.cursor()
@@ -75,4 +78,4 @@ cursor.close()
 conexao.close()
 
 print()
-print("Etapa 1 executada com maestria. Vai brasa!")
+print("Etapa 1 executada com sucesso!")
