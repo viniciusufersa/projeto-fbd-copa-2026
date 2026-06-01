@@ -4,11 +4,14 @@
 
 import mysql.connector
 
+# Essa conexão acessa o banco copa2026, onde já existem as tabelas
+# e os registros cadastrados nas etapas anteriores.
 conexao = mysql.connector.connect(
     host='localhost',
     user='root',
     password='',
-    database='copa2026'
+    database='copa2026',
+    use_pure=True
 )
 
 cursor = conexao.cursor()
@@ -16,6 +19,13 @@ cursor = conexao.cursor()
 print('=== ETAPA 4 - ATUALIZAÇÃO DE REGISTROS ===')
 print()
 
+# ============================================================
+# ATUALIZAÇÃO DE SELEÇÃO
+# ============================================================
+
+# Primeiro o sistema mostra as seleções cadastradas.
+# Isso vai ajudar o usuário a visualizar os IDs antes de escolher 
+# qual registro será alterado.
 print('--- Seleções cadastradas ---')
 
 cursor.execute('SELECT id, nome_pais, tecnico, ranking_fifa FROM selecoes ORDER BY id')
@@ -25,11 +35,15 @@ for selecao in cursor.fetchall():
 
 print()
 
+# O usuário informa o ID da seleção que deseja atualizar.
+# Se pressionar ENTER, essa parte é pulada sem alterar nenhum registro.
 id_selecao = input('ID da seleção para atualizar (ENTER para pular): ')
 
 if id_selecao.strip() == '':
     print('Nenhuma seleção atualizada.')
 else:
+    # Como o ID precisa ser numérico, o programa tenta converter o valor para inteiro.
+    # Se o usuário digitar algo inválido, o sistema informa o erro e não faz a atualização.
     try:
         id_selecao = int(id_selecao)
     except ValueError:
@@ -37,6 +51,8 @@ else:
         id_selecao = None
 
     if id_selecao is not None:
+        # Antes de atualizar, o sistema busca a seleção pelo ID informado.
+        # Isso evita tentar alterar um registro que não existe.
         cursor.execute(
             'SELECT nome_pais, tecnico, ranking_fifa FROM selecoes WHERE id = %s',
             (id_selecao,)
@@ -49,11 +65,14 @@ else:
         else:
             print(f'Seleção: {selecao[0]}')
 
+            # Se o usuário pressionar ENTER, o técnico atual será mantido.
             novo_tecnico = input(f'Novo técnico [{selecao[1]}]: ')
 
             if novo_tecnico.strip() == '':
                 novo_tecnico = selecao[1]
 
+            # O ranking também pode ser mantido com ENTER.
+            # Se for digitado um novo valor, ele precisa ser convertido para inteiro.
             novo_ranking = input(f'Novo ranking FIFA [{selecao[2]}]: ')
 
             if novo_ranking.strip() == '':
@@ -65,6 +84,8 @@ else:
                     print('Ranking inválido. Mantendo o valor atual.')
                     novo_ranking = selecao[2]
 
+            # O UPDATE altera somente a seleção escolhida.
+            # O WHERE id = %s é essencial para evitar alterar todos os registros da tabela.
             cursor.execute('''
                 UPDATE selecoes
                 SET tecnico = %s, ranking_fifa = %s
@@ -77,6 +98,12 @@ else:
 
 print()
 
+# ============================================================
+# ATUALIZAÇÃO DE JOGADOR
+# ============================================================
+
+# Aqui o sistema lista os jogadores cadastrados para que o usuário escolha
+# qual jogador deseja atualizar.
 print('--- Jogadores cadastrados ---')
 
 cursor.execute('SELECT id, nome, posicao, numero_camisa FROM jogadores ORDER BY id')
@@ -86,6 +113,8 @@ for jogador in cursor.fetchall():
 
 print()
 
+# O usuário informa o ID do jogador.
+# Se deixar vazio, o programa não altera nenhum jogador.
 id_jogador = input('ID do jogador para atualizar (ENTER para pular): ')
 
 if id_jogador.strip() == '':
@@ -98,6 +127,8 @@ else:
         id_jogador = None
 
     if id_jogador is not None:
+        # O jogador é buscado pelo ID antes da alteração.
+        # Desse jeito, o programa confirma se o registro realmente existe.
         cursor.execute(
             'SELECT nome, posicao, numero_camisa FROM jogadores WHERE id = %s',
             (id_jogador,)
@@ -110,11 +141,15 @@ else:
         else:
             print(f'Jogador: {jogador[0]}')
 
+            # A posição pode ser alterada ou mantida.
+            # Pressionar ENTER mantém o valor atual.
             nova_posicao = input(f'Nova posição [{jogador[1]}]: ')
 
             if nova_posicao.strip() == '':
                 nova_posicao = jogador[1]
 
+            # O número da camisa é um campo numérico.
+            # Se o usuário digitar um valor inválido, o programa mantém o valor anterior.
             nova_camisa = input(f'Novo número de camisa [{jogador[2]}]: ')
 
             if nova_camisa.strip() == '':
@@ -126,6 +161,7 @@ else:
                     print('Número inválido. Mantendo o valor atual.')
                     nova_camisa = jogador[2]
 
+            # O UPDATE altera a posição e o número da camisa apenas do jogador escolhido.
             cursor.execute('''
                 UPDATE jogadores
                 SET posicao = %s, numero_camisa = %s
@@ -138,6 +174,12 @@ else:
 
 print()
 
+# ============================================================
+# ATUALIZAÇÃO DE ESTÁDIO
+# ============================================================
+
+# Nessa parte, o sistema mostra os estádios cadastrados.
+# A atualização será feita a partir do ID escolhido pelo usuário.
 print('--- Estádios cadastrados ---')
 
 cursor.execute('SELECT id, nome, cidade, capacidade FROM estadios ORDER BY id')
@@ -159,6 +201,7 @@ else:
         id_estadio = None
 
     if id_estadio is not None:
+        # Antes de alterar a capacidade, o sistema verifica se o estádio existe.
         cursor.execute(
             'SELECT nome, capacidade FROM estadios WHERE id = %s',
             (id_estadio,)
@@ -171,6 +214,8 @@ else:
         else:
             print(f'Estádio: {estadio[0]}')
 
+            # A capacidade pode ser mantida com ENTER.
+            # Caso seja digitada, precisa ser um número inteiro.
             nova_capacidade = input(f'Nova capacidade [{estadio[1]}]: ')
 
             if nova_capacidade.strip() == '':
@@ -181,7 +226,8 @@ else:
                 except ValueError:
                     print('Capacidade inválida. Mantendo o valor atual.')
                     nova_capacidade = estadio[1]
-
+            
+            # O UPDATE altera somente a capacidade do estádio escolhido.
             cursor.execute('''
                 UPDATE estadios
                 SET capacidade = %s
@@ -194,6 +240,12 @@ else:
 
 print()
 
+# ============================================================
+# ATUALIZAÇÃO DE PARTIDA
+# ============================================================
+
+# Por fim, o sistema lista as partidas cadastradas.
+# Aqui é possível atualizar data, fase e placar da partida.
 print('--- Partidas cadastradas ---')
 
 cursor.execute('SELECT id, data_jogo, fase, gols_casa, gols_visitante FROM partidas ORDER BY id')
@@ -215,6 +267,8 @@ else:
         id_partida = None
 
     if id_partida is not None:
+        # A partida é buscada pelo ID para garantir que o registro existe
+        # antes de qualquer alteração.
         cursor.execute(
             'SELECT data_jogo, fase, gols_casa, gols_visitante FROM partidas WHERE id = %s',
             (id_partida,)
@@ -227,16 +281,21 @@ else:
         else:
             print(f'Partida: {partida[0]} - {partida[1]}')
 
+            # A data pode ser alterada ou mantida.
+            # Se o usuário pressionar ENTER, o valor atual permanece.
             nova_data = input(f'Nova data [{partida[0]}]: ')
 
             if nova_data.strip() == '':
                 nova_data = partida[0]
 
+            # A fase segue a mesma lógica: pode ser atualizada ou mantida.
             nova_fase = input(f'Nova fase [{partida[1]}]: ')
 
             if nova_fase.strip() == '':
                 nova_fase = partida[1]
 
+            # Os gols da seleção mandante são numéricos.
+            # Se o usuário digitar um valor inválido, o placar atual será mantido.
             novos_gols_casa = input(f'Gols mandante [{partida[2]}]: ')
 
             if novos_gols_casa.strip() == '':
@@ -248,6 +307,7 @@ else:
                     print('Valor inválido. Mantendo o valor atual.')
                     novos_gols_casa = partida[2]
 
+            # A mesma validação é feita para os gols da seleção visitante.
             novos_gols_visitante = input(f'Gols visitante [{partida[3]}]: ')
 
             if novos_gols_visitante.strip() == '':
@@ -259,6 +319,8 @@ else:
                     print('Valor inválido. Mantendo o valor atual.')
                     novos_gols_visitante = partida[3]
 
+            # Esse UPDATE altera data, fase e placar da partida escolhida.
+            # Mais uma vez, o WHERE garante que apenas o registro selecionado será atualizado.
             cursor.execute('''
                 UPDATE partidas
                 SET data_jogo = %s, fase = %s, gols_casa = %s, gols_visitante = %s
@@ -269,6 +331,8 @@ else:
 
             print('Partida atualizada com sucesso!')
 
+# Sempre fechamos o cursor e a conexão ao final.
+# Isso encerra a comunicação com o banco e libera os recursos.
 cursor.close()
 conexao.close()
 

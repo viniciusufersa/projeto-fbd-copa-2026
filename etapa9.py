@@ -4,20 +4,35 @@
 
 import mysql.connector
 
+# A Etapa 9 reúne as funcionalidades principais do projeto em um sistema com menu.
+# Por isso, o código foi organizado em funções: cada função cuida de uma parte específica,
+# como cadastrar, consultar, atualizar ou remover dados.
+
+# Essa função centraliza a conexão com o banco de dados.
+# Como a Etapa 9 é o sistema completo, usar uma função evita repetir
+# os mesmos dados de conexão em todas as partes do menu.
 def conectar():
     return mysql.connector.connect(
         host='localhost',
         user='root',
         password='',
-        database='copa2026'
+        database='copa2026',
+        use_pure=True
     )
 
+# Essa função imprime uma linha simples para separar visualmente
+# as telas do sistema no terminal.
 def linha():
     print('-' * 50)
 
+# Essa pausa deixa o usuário ler o resultado antes de voltar ao menu.
+# Sem ela, a tela poderia mudar rápido demais depois de uma consulta ou operação.
 def pausar():
     input('Pressione ENTER para continuar...')
 
+# Essa função lê um número inteiro opcional.
+# Se o usuário pressionar ENTER, o sistema entende que aquele campo pode ficar vazio.
+# Se digitar algo inválido, o campo é ignorado sem derrubar o programa.
 def ler_inteiro(mensagem):
     valor = input(mensagem)
 
@@ -30,6 +45,9 @@ def ler_inteiro(mensagem):
         print('Valor inválido. Campo ignorado.')
         return None
 
+# Essa função lê um número inteiro obrigatório.
+# Ela é usada principalmente para IDs, porque o sistema precisa de um número válido
+# para localizar registros como seleção, partida, jogador ou estádio.
 def ler_inteiro_obrigatorio(mensagem):
     while True:
         try:
@@ -37,6 +55,8 @@ def ler_inteiro_obrigatorio(mensagem):
         except ValueError:
             print('Digite um número válido!')
 
+# Essa função lê um texto obrigatório.
+# Enquanto o usuário deixar o campo vazio, o programa continua pedindo o valor.
 def ler_texto_obrigatorio(mensagem):
     valor = input(mensagem)
 
@@ -46,6 +66,8 @@ def ler_texto_obrigatorio(mensagem):
 
     return valor.strip()
 
+# Essa função mostra as seleções de forma resumida, exibindo apenas ID e país.
+# Ela ajuda o usuário a escolher o ID correto em cadastros e consultas.
 def listar_selecoes_resumido(cursor):
     cursor.execute('SELECT id, nome_pais FROM selecoes ORDER BY id')
     selecoes = cursor.fetchall()
@@ -55,6 +77,8 @@ def listar_selecoes_resumido(cursor):
 
     return selecoes
 
+# Essa função mostra os estádios de forma resumida, exibindo apenas ID e nome.
+# Ela é usada quando o usuário precisa escolher um estádio para uma partida.
 def listar_estadios_resumido(cursor):
     cursor.execute('SELECT id, nome FROM estadios ORDER BY id')
     estadios = cursor.fetchall()
@@ -64,6 +88,12 @@ def listar_estadios_resumido(cursor):
 
     return estadios
 
+# ============================================================
+# CADASTRO DE SELEÇÃO
+# ============================================================
+
+# Essa função cadastra uma nova seleção no banco.
+# Ela recebe os dados pelo teclado e grava as informações na tabela selecoes.
 def cadastrar_selecao():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -95,6 +125,12 @@ def cadastrar_selecao():
 
     pausar()
 
+# ============================================================
+# CADASTRO DE JOGADOR
+# ============================================================
+
+# Essa função cadastra um jogador e o relaciona a uma seleção existente.
+# Antes de inserir, o sistema mostra as seleções disponíveis e valida o ID informado.
 def cadastrar_jogador():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -126,6 +162,8 @@ def cadastrar_jogador():
 
     id_selecao = ler_inteiro_obrigatorio('ID da seleção: ')
 
+    # Antes de inserir o jogador, o sistema confere se a seleção informada existe.
+    # Isso evita gravar um jogador ligado a um ID inválido.
     cursor.execute('SELECT id FROM selecoes WHERE id = %s', (id_selecao,))
     selecao = cursor.fetchone()
 
@@ -146,6 +184,12 @@ def cadastrar_jogador():
 
     pausar()
 
+# ============================================================
+# CADASTRO DE ESTÁDIO
+# ============================================================
+
+# Essa função cadastra os estádios que poderão ser usados nas partidas.
+# Nome e cidade são obrigatórios, enquanto país-sede e capacidade podem ficar vazios.
 def cadastrar_estadio():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -177,6 +221,13 @@ def cadastrar_estadio():
 
     pausar()
 
+# ============================================================
+# CADASTRO DE PARTIDA
+# ============================================================
+
+# Essa função cadastra uma partida.
+# Ela precisa de duas seleções diferentes e de um estádio 
+# existente para manter a coerência dos dados.
 def cadastrar_partida():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -209,6 +260,8 @@ def cadastrar_partida():
     id_selecao_visitante = ler_inteiro_obrigatorio('ID da seleção visitante: ')
     id_estadio = ler_inteiro_obrigatorio('ID do estádio: ')
 
+    # Uma partida não pode ter a mesma seleção como mandante e visitante.
+    # Essa verificação evita um cadastro sem sentido dentro do contexto da competição.
     if id_selecao_casa == id_selecao_visitante:
         print('A seleção mandante e a visitante não podem ser iguais.')
         cursor.close()
@@ -216,6 +269,8 @@ def cadastrar_partida():
         pausar()
         return
 
+    # Depois de receber os IDs, o sistema verifica se a seleção mandante,
+    # a seleção visitante e o estádio realmente existem no banco.
     cursor.execute('SELECT id FROM selecoes WHERE id = %s', (id_selecao_casa,))
     selecao_casa = cursor.fetchone()
 
@@ -248,6 +303,12 @@ def cadastrar_partida():
 
     pausar()
 
+# ============================================================
+# CONSULTA: JOGADORES DE UMA SELEÇÃO
+# ============================================================
+
+# Essa consulta mostra os jogadores vinculados a uma seleção escolhida pelo usuário.
+# O INNER JOIN permite buscar o nome da seleção junto com os dados dos jogadores.
 def jogadores_por_selecao():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -286,6 +347,12 @@ def jogadores_por_selecao():
 
     pausar()
 
+# ============================================================
+# CONSULTA: RESULTADOS DAS PARTIDAS
+# ============================================================
+
+# Essa consulta mostra as partidas com seleção mandante, visitante, placar e estádio.
+# A tabela selecoes aparece duas vezes, uma como casa e outra como visitante.
 def resultados_partidas():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -322,6 +389,12 @@ def resultados_partidas():
 
     pausar()
 
+# ============================================================
+# CONSULTA: PARTIDAS POR FASE
+# ============================================================
+
+# Essa consulta filtra as partidas por fase da competição.
+# O LIKE permite buscar por parte do nome, como 'grupos' ou 'oitavas'.
 def partidas_por_fase():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -358,6 +431,12 @@ def partidas_por_fase():
 
     pausar()
 
+# ============================================================
+# CONSULTA: QUANTIDADE DE JOGADORES POR SELEÇÃO
+# ============================================================
+
+# Essa consulta usa COUNT e GROUP BY para contar quantos jogadores cada seleção possui.
+# O LEFT JOIN mantém na listagem até seleções que ainda não têm jogadores cadastrados.
 def contar_jogadores_por_selecao():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -384,6 +463,12 @@ def contar_jogadores_por_selecao():
 
     pausar()
 
+# ============================================================
+# CONSULTA: MÉDIA DE GOLS POR PARTIDA
+# ============================================================
+
+# Essa consulta calcula a média de gols somando os gols da mandante e da visitante
+# e depois aplicando AVG sobre as partidas cadastradas.
 def media_gols_por_partida():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -408,6 +493,12 @@ def media_gols_por_partida():
 
     pausar()
 
+# ============================================================
+# CONSULTA: ESTÁDIOS POR QUANTIDADE DE PARTIDAS
+# ============================================================
+
+# Essa consulta conta quantas partidas cada estádio recebeu.
+# O HAVING filtra os grupos depois da contagem.
 def estadios_por_quantidade_partidas():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -442,6 +533,12 @@ def estadios_por_quantidade_partidas():
 
     pausar()
 
+# ============================================================
+# CONSULTA: SELEÇÃO COM MAIOR TOTAL DE GOLS
+# ============================================================
+
+# Essa consulta soma os gols de cada seleção, considerando quando ela aparece
+# como mandante e também quando aparece como visitante.
 def selecao_mais_gols():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -450,6 +547,9 @@ def selecao_mais_gols():
     print('SELEÇÃO COM MAIOR TOTAL DE GOLS')
     linha()
 
+    # Como os gols estão separados em duas colunas, uma para mandante e outra para visitante,
+    # o UNION ALL junta essas duas situações em uma única listagem antes da soma.
+    # O COALESCE transforma valores nulos em zero para não atrapalhar o cálculo.
     cursor.execute('''
         SELECT selecoes.nome_pais, SUM(gols_por_selecao.gols) AS total_gols
         FROM (
@@ -477,6 +577,12 @@ def selecao_mais_gols():
 
     pausar()
 
+# ============================================================
+# CONSULTA: ESTÁDIOS POR CAPACIDADE MÍNIMA
+# ============================================================
+
+# Essa consulta mostra os estádios com capacidade maior que o valor informado pelo usuário.
+# Ela ajuda a filtrar os maiores locais cadastrados no sistema.
 def estadios_por_capacidade():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -509,6 +615,12 @@ def estadios_por_capacidade():
 
     pausar()
 
+# ============================================================
+# CONSULTA: JOGADORES POR POSIÇÃO
+# ============================================================
+
+# Essa consulta busca jogadores pela posição informada.
+# O LIKE permite procurar parte do texto digitado.
 def jogadores_por_posicao():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -542,6 +654,12 @@ def jogadores_por_posicao():
 
     pausar()
 
+# ============================================================
+# CONSULTA: SELEÇÕES SEM PARTIDAS
+# ============================================================
+
+# Essa consulta usa LEFT JOIN para encontrar seleções que ainda não aparecem
+# em nenhuma partida, nem como mandante nem como visitante.
 def selecoes_sem_partidas():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -550,6 +668,8 @@ def selecoes_sem_partidas():
     print('SELEÇÕES SEM PARTIDAS')
     linha()
 
+    # O LEFT JOIN traz todas as seleções e tenta encontrar partidas relacionadas.
+    # Quando partidas.id aparece como NULL, significa que a seleção não está em nenhuma partida.
     cursor.execute('''
         SELECT selecoes.nome_pais
         FROM selecoes
@@ -575,6 +695,12 @@ def selecoes_sem_partidas():
 
     pausar()
 
+# ============================================================
+# ATUALIZAÇÃO DE SELEÇÃO
+# ============================================================
+
+# Essa função atualiza técnico e ranking de uma seleção.
+# O usuário escolhe pelo ID e pode pressionar ENTER para manter o valor atual.
 def atualizar_selecao():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -617,6 +743,7 @@ def atualizar_selecao():
                 print('Ranking inválido. Mantendo o valor atual.')
                 novo_ranking = selecao[2]
 
+        # O UPDATE altera apenas a seleção escolhida, porque o WHERE usa o ID informado.
         cursor.execute('''
             UPDATE selecoes
             SET tecnico = %s, ranking_fifa = %s
@@ -632,6 +759,12 @@ def atualizar_selecao():
 
     pausar()
 
+# ============================================================
+# ATUALIZAÇÃO DE PARTIDA
+# ============================================================
+
+# Essa função permite atualizar data, fase e placar de uma partida.
+# O sistema busca a partida pelo ID antes de aplicar o UPDATE.
 def atualizar_partida():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -697,6 +830,7 @@ def atualizar_partida():
                 print('Valor inválido. Mantendo o valor atual.')
                 novos_gols_visitante = partida[3]
 
+        # O UPDATE altera apenas a partida escolhida, porque o WHERE usa o ID informado.
         cursor.execute('''
             UPDATE partidas
             SET data_jogo = %s, fase = %s, gols_casa = %s, gols_visitante = %s
@@ -712,6 +846,12 @@ def atualizar_partida():
 
     pausar()
 
+# ============================================================
+# REMOÇÃO DE JOGADOR
+# ============================================================
+
+# Essa função remove um jogador escolhido pelo ID.
+# Antes de excluir, o sistema confirma se o jogador existe e pede confirmação ao usuário.
 def remover_jogador():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -759,6 +899,13 @@ def remover_jogador():
 
     pausar()
 
+# ============================================================
+# REMOÇÃO DE PARTIDA
+# ============================================================
+
+# Essa função remove uma partida escolhida pelo ID.
+# Como a partida não é usada como referência por outra tabela, 
+# ela pode ser removida diretamente após confirmação.
 def remover_partida():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -806,6 +953,13 @@ def remover_partida():
 
     pausar()
 
+# ============================================================
+# REMOÇÃO DE ESTÁDIO
+# ============================================================
+
+# Essa função tenta remover um estádio.
+# Antes disso, verifica se existem partidas vinculadas para 
+# evitar inconsistência no banco.
 def remover_estadio():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -837,6 +991,8 @@ def remover_estadio():
     if estadio is None:
         print('Estádio não encontrado.')
     else:
+        # Antes de remover o estádio, o sistema conta se existem partidas vinculadas a ele.
+        # Se houver, a remoção é bloqueada para preservar os relacionamentos.
         cursor.execute('SELECT COUNT(*) FROM partidas WHERE id_estadio = %s', (id_estadio,))
         total_partidas = cursor.fetchone()[0]
 
@@ -860,6 +1016,12 @@ def remover_estadio():
 
     pausar()
 
+# ============================================================
+# REMOÇÃO DE SELEÇÃO
+# ============================================================
+
+# Essa função tenta remover uma seleção.
+# Antes disso, verifica se existem jogadores ou partidas vinculadas a ela.
 def remover_selecao():
     conexao = conectar()
     cursor = conexao.cursor()
@@ -891,6 +1053,8 @@ def remover_selecao():
     if selecao is None:
         print('Seleção não encontrada.')
     else:
+        # Antes de remover a seleção, o sistema conta jogadores vinculados a ela.
+        # Também será feita uma contagem de partidas em que ela aparece.
         cursor.execute('SELECT COUNT(*) FROM jogadores WHERE id_selecao = %s', (id_selecao,))
         total_jogadores = cursor.fetchone()[0]
 
@@ -921,6 +1085,12 @@ def remover_selecao():
 
     pausar()
 
+# ============================================================
+# MENU DE CADASTROS
+# ============================================================
+
+# Esse menu reúne as opções de cadastro do sistema.
+# Ele chama a função correspondente de acordo com a opção escolhida pelo usuário.
 def menu_cadastros():
     opcao = -1
 
@@ -954,6 +1124,12 @@ def menu_cadastros():
         else:
             print('Opção inválida!')
 
+# ============================================================
+# MENU DE CONSULTAS
+# ============================================================
+
+# Esse menu reúne as consultas do sistema.
+# Aqui ficam as consultas simples, consultas com JOIN e consultas com agregação.
 def menu_consultas():
     opcao = -1
 
@@ -1005,6 +1181,12 @@ def menu_consultas():
         else:
             print('Opção inválida!')
 
+# ============================================================
+# MENU DE GERENCIAMENTO
+# ============================================================
+
+# Esse menu reúne as operações que alteram dados já existentes,
+# como atualização e remoção de registros.
 def menu_gerenciamento():
     opcao = -1
 
@@ -1044,11 +1226,19 @@ def menu_gerenciamento():
         else:
             print('Opção inválida!')
 
+# ============================================================
+# MENU PRINCIPAL DO SISTEMA
+# ============================================================
+
+# O menu principal é o ponto de entrada da Etapa 9.
+# Ele direciona o usuário para cadastros, consultas ou gerenciamento.
 print()
 print('================================================')
 print('SISTEMA COPA DO MUNDO 2026')
 print('================================================')
 
+# A variável opcao controla a repetição do menu.
+# Enquanto o usuário não escolher 0, o sistema continua em execução.
 opcao = -1
 
 while opcao != 0:

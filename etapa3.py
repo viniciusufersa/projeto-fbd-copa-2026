@@ -4,11 +4,14 @@
 
 import mysql.connector
 
+# Essa conexão já acessa o banco copa2026 diretamente,
+# porque ele foi criado na Etapa 1 e preenchido na Etapa 2.
 conexao = mysql.connector.connect(
     host='localhost',
     user='root',
     password='',
-    database='copa2026'
+    database='copa2026',
+    use_pure=True
 )
 
 cursor = conexao.cursor()
@@ -16,6 +19,12 @@ cursor = conexao.cursor()
 print('=== ETAPA 3 - CONSULTA DE DADOS ===')
 print()
 
+# ============================================================
+# CONSULTA GERAL DAS SELEÇÕES
+# ============================================================
+
+# Nessa primeira consulta, o sistema mostra todas as seleções cadastradas.
+# O ORDER BY organiza os resultados em ordem alfabética pelo nome do país.
 print('--- Seleções cadastradas ---')
 
 cursor.execute('''
@@ -24,8 +33,10 @@ cursor.execute('''
     ORDER BY nome_pais
     ''')
 
+# O fetchall() busca todos os registros retornados pela consulta.
 selecoes = cursor.fetchall()
 
+# Se a lista vier vazia, significa que ainda não há seleções cadastradas.
 if len(selecoes) == 0:
     print('Nenhuma seleção cadastrada.')
 else:
@@ -34,10 +45,18 @@ else:
 
 print()
 
+# ============================================================
+# CONSULTA DE SELEÇÕES POR CONFEDERAÇÃO
+# ============================================================
+
+# Aqui o usuário informa uma confederação, e o sistema busca somente
+# as seleções que pertencem a ela.
 print('--- Buscar seleções por confederação ---')
 
 confederacao = input('Confederação: ')
 
+# O WHERE filtra os registros de acordo com a confederação digitada.
+# O %s recebe o valor informado pelo usuário de forma parametrizada.
 cursor.execute('''
     SELECT id, nome_pais, confederacao
     FROM selecoes
@@ -47,6 +66,7 @@ cursor.execute('''
 
 resultados = cursor.fetchall()
 
+# Se nenhum registro corresponder ao filtro, o sistema informa que não encontrou resultados.
 if len(resultados) == 0:
     print('Nenhuma seleção encontrada para essa confederação.')
 else:
@@ -55,10 +75,18 @@ else:
 
 print()
 
+# ============================================================
+# CONSULTA DE JOGADORES POR POSIÇÃO
+# ============================================================
+
+# Nessa parte, o sistema busca jogadores pela posição informada.
+# A busca aceita parte do texto, o que deixa a consulta mais flexível.
 print('--- Buscar jogadores por posição ---')
 
 posicao = input('Posição: ')
 
+# O LIKE permite fazer uma busca aproximada.
+# Os símbolos % antes e depois do texto fazem o MySQL procurar o conteúdo em qualquer parte do campo.
 cursor.execute('''
     SELECT id, nome, posicao, numero_camisa, clube_origem
     FROM jogadores
@@ -76,14 +104,25 @@ else:
 
 print()
 
+# ============================================================
+# CONSULTA DE ESTÁDIOS POR CAPACIDADE MÍNIMA
+# ============================================================
+
+# Aqui o usuário informa uma capacidade mínima.
+# O sistema retorna os estádios com capacidade igual ou superior ao valor informado.
 print('--- Buscar estádios por capacidade mínima ---')
 
+# Como capacidade é um número, o programa tenta converter a entrada para inteiro.
+# Se o usuário digitar um valor inválido, o sistema usa 0 como padrão para 
+# não interromper a execução.
 try:
     capacidade = int(input('Capacidade mínima: '))
 except ValueError:
     print('Valor inválido. Usando 0 como padrão.')
     capacidade = 0
 
+# O WHERE com >= filtra os estádios que atendem à capacidade mínima.
+# O ORDER BY capacidade DESC mostra primeiro os estádios com maior capacidade.
 cursor.execute('''
     SELECT id, nome, cidade, pais_sede, capacidade
     FROM estadios
@@ -101,10 +140,18 @@ else:
 
 print()
 
+# ============================================================
+# CONSULTA DE PARTIDAS POR FASE
+# ============================================================
+
+# Nessa última consulta, o usuário informa uma fase da competição.
+# O sistema busca as partidas correspondentes a essa fase.
 print('--- Buscar partidas por fase ---')
 
 fase = input('Fase: ')
 
+# O LIKE permite buscar por parte do nome da fase.
+# Assim, se o usuário digitar apenas "grupos", o sistema pode encontrar "Fase de grupos".
 cursor.execute('''
     SELECT id, data_jogo, fase, gols_casa, gols_visitante
     FROM partidas
@@ -120,6 +167,8 @@ else:
     for partida in partidas:
         print(f'[{partida[0]}] {partida[1]} | {partida[2]} | Placar: {partida[3]} x {partida[4]}')
 
+# Sempre fechamos o cursor e a conexão ao final.
+# Isso encerra a comunicação com o banco e libera os recursos.
 cursor.close()
 conexao.close()
 
